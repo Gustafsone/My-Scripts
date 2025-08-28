@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QTI Test Bank Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 md:p-12 lg:p-16">
+    <div class="container mx-auto max-w-7xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-6 sm:p-8 md:p-10 text-center rounded-t-2xl">
+            <h1 class="text-3xl sm:text-4xl font-bold mb-2">QTI Test Bank Generator</h1>
+            <p class="text-base sm:text-lg opacity-90">Convert your test bank to QTI 1.2 compliant XML with IMS manifest.</p>
+        </div>
+        
+        <div class="p-6 sm:p-8 md:p-10">
+            <!-- Instructions Section -->
+            <div class="bg-gray-50 rounded-xl p-4 sm:p-6 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">📋 Input Format Instructions</h3>
+                <p class="text-gray-600 mb-4">Paste your test bank content below. The generator automatically parses multiple choice and essay questions based on the format shown in the example.</p>
+                
+                <div class="bg-white border border-gray-200 rounded-lg p-4 font-mono text-sm overflow-x-auto">
+                    <pre class="whitespace-pre-wrap">## Multiple Choice Questions
+
+1. Question text here? **[Answer: A]**
+   a) Option A
+   b) Option B
+   c) Option C
+   d) Option D
+   e) Option E
+
+2. Another question? **[Answer: B]**
+   a) Option A
+   b) Option B
+   ...
+
+## Essay Questions
+
+1. Essay question text here?
+
+2. Another essay question?</pre>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="chapterTitle" class="block font-semibold text-gray-700 mb-2">Chapter Title:</label>
+                        <input type="text" id="chapterTitle" placeholder="e.g., Chapter 1 - Introduction" value="Chapter 1 - Teaching Secondary and Middle School Mathematics"
+                               class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors duration-200">
+                    </div>
+                    <div>
+                        <label for="authorName" class="block font-semibold text-gray-700 mb-2">Author:</label>
+                        <input type="text" id="authorName" placeholder="e.g., D.J. Brahier" value="D.J. Brahier"
+                               class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors duration-200">
+                    </div>
+                </div>
+                
+                <div class="form-group mb-6">
+                    <label for="testBankInput" class="block font-semibold text-gray-700 mb-2">Test Bank Content:</label>
+                    <textarea id="testBankInput" placeholder="Paste your test bank content here..."
+                              class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-indigo-500 transition-colors duration-200"
+                              rows="15"></textarea>
+                </div>
+                
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button class="btn bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="generateQTI()">
+                        🚀 Generate QTI Files
+                    </button>
+                    <button class="btn bg-gray-400 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="loadExample()">
+                        📝 Load Example
+                    </button>
+                    <button class="btn bg-gray-400 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="clearAll()">
+                        🗑️ Clear All
+                    </button>
+                </div>
+                
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden mb-6">
+                    <div id="progressBar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 ease-in-out" style="width: 0%;"></div>
+                </div>
+                
+                <div id="alertContainer"></div>
+            </div>
+            
+            <div id="outputSection" class="output-section hidden">
+                <!-- Statistics Section -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="statsContainer"></div>
+                
+                <!-- Output Tabs -->
+                <div class="flex border-b-2 border-gray-200 mb-6">
+                    <button class="tab-button active flex-1 py-4 text-center font-bold text-gray-700 border-b-4 border-indigo-500 transition-colors duration-200" onclick="switchTab('qti')">
+                        QTI XML File
+                    </button>
+                    <button class="tab-button flex-1 py-4 text-center font-bold text-gray-700 border-b-4 border-transparent transition-colors duration-200 hover:border-gray-300" onclick="switchTab('manifest')">
+                        IMS Manifest
+                    </button>
+                    <button class="tab-button flex-1 py-4 text-center font-bold text-gray-700 border-b-4 border-transparent transition-colors duration-200 hover:border-gray-300" onclick="switchTab('summary')">
+                        Generation Summary
+                    </button>
+                </div>
+                
+                <div id="qti-tab" class="tab-content">
+                    <div class="flex flex-wrap gap-4 mb-4">
+                        <button class="btn bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="downloadFile('qti')">
+                            💾 Download QTI XML
+                        </button>
+                        <button class="btn bg-gray-400 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="copyToClipboard('qtiOutput')">
+                            📋 Copy to Clipboard
+                        </button>
+                    </div>
+                    <textarea id="qtiOutput" class="w-full h-[500px] font-mono text-sm p-4 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none" readonly></textarea>
+                </div>
+                
+                <div id="manifest-tab" class="tab-content hidden">
+                    <div class="flex flex-wrap gap-4 mb-4">
+                        <button class="btn bg-gradient-to-r from-green-500 to-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="downloadFile('manifest')">
+                            💾 Download Manifest
+                        </button>
+                        <button class="btn bg-gray-400 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-transform duration-200 transform hover:-translate-y-1" onclick="copyToClipboard('manifestOutput')">
+                            📋 Copy to Clipboard
+                        </button>
+                    </div>
+                    <textarea id="manifestOutput" class="w-full h-[500px] font-mono text-sm p-4 rounded-lg bg-gray-100 border border-gray-300 focus:outline-none" readonly></textarea>
+                </div>
+                
+                <div id="summary-tab" class="tab-content hidden">
+                    <div id="summaryContent" class="p-4 bg-gray-100 rounded-lg"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state object to hold generated data
+        let generatedData = {
+            qti: '',
+            manifest: '',
+            stats: {}
+        };
+
+        /**
+         * Loads example test bank content into the input textarea.
+         */
+        function loadExample() {
+            const exampleContent = `# Chapter 1 Test Bank - Teaching Secondary and Middle School Mathematics, 7th Edition
+*D.J. Brahier*
+
+## Multiple Choice Questions
+
+1. As stated in the text, success in teaching mathematics requires a caring person who is interested in which of the following? **[Answer: A]**
+   a) Content being taught and the development of young adolescents.
+   b) The development of young adolescents and an interest in student extracurricular activities.
+   c) An interest in student extracurricular activities and student backgrounds.
+   d) Student backgrounds and content being taught.
+   e) Student backgrounds and the development of young adolescents.
+
+2. In which year was the Third International Mathematics and Science Study (TIMSS) initially conducted? **[Answer: E]**
+   a) 1979.
+   b) 1982.
+   c) 1987.
+   d) 1991.
+   e) 1995.
+
+3. Which of the following is an example of an inductive reasoning task for students? **[Answer: C]**
+   a) Calculate the area of a rectangle with a length of 10 and a width of 5.
+   b) Use the quadratic formula to solve $x^2 + 5x + 6 = 0$.
+   c) Given the sequence 2, 4, 6, 8, describe the pattern and predict the next term.
+   d) Prove that the sum of angles in a triangle is 180 degrees.
+   e) State the Pythagorean theorem.
+
+## Essay Questions
+
+1. Describe some of the most significant results of the TIMSS, NAEP, and PISA reports. Based on the findings, state some suggestions for improving our mathematics education system.
+
+2. Compare and contrast the overriding mathematics education views of the New Math movement, back-to-basics movement, and the current reform efforts, which use Common Core State Standards for Mathematics and Principles to Actions as a guide.`;
+            
+            document.getElementById('testBankInput').value = exampleContent;
+            showAlert('Example content loaded!', 'success');
+        }
+
+        /**
+         * Clears all input and output fields.
+         */
+        function clearAll() {
+            document.getElementById('testBankInput').value = '';
+            document.getElementById('qtiOutput').value = '';
+            document.getElementById('manifestOutput').value = '';
+            document.getElementById('outputSection').classList.add('hidden');
+            updateProgress(0);
+            showAlert('All content cleared!', 'success');
+        }
+
+        /**
+         * Main function to generate the QTI and manifest XML files.
+         */
+        async function generateQTI() {
+            const chapterTitle = document.getElementById('chapterTitle').value.trim();
+            const author = document.getElementById('authorName').value.trim();
+            const input = document.getElementById('testBankInput').value.trim();
+
+            if (!input) {
+                showAlert('Please enter test bank content!', 'error');
+                return;
+            }
+
+            if (!chapterTitle) {
+                showAlert('Please enter a chapter title!', 'error');
+                return;
+            }
+
+            updateProgress(20);
+            
+            try {
+                // Parse the raw text input into a structured data object
+                const parsedData = parseTestBank(input);
+                updateProgress(40);
+                
+                // Generate the QTI and manifest XML strings
+                const qtiXML = generateQTIXML(parsedData, chapterTitle, author);
+                updateProgress(70);
+                
+                const manifestXML = generateManifestXML(parsedData, chapterTitle, author);
+                updateProgress(90);
+                
+                // Store the generated data in the global state
+                generatedData = {
+                    qti: qtiXML,
+                    manifest: manifestXML,
+                    stats: {
+                        multipleChoice: parsedData.multipleChoice.length,
+                        essays: parsedData.essays.length,
+                        totalQuestions: parsedData.multipleChoice.length + parsedData.essays.length
+                    }
+                };
+
+                // Display the results in the UI
+                displayResults();
+                updateProgress(100);
+                showAlert('QTI files generated successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Generation error:', error);
+                showAlert('Error generating QTI files: ' + error.message, 'error');
+                updateProgress(0);
+            }
+        }
+
+        /**
+         * Parses the raw text input from the test bank into a structured object.
+         * Fixes the original bug by correctly handling the final question.
+         * @param {string} input - The raw text input.
+         * @returns {{multipleChoice: Array<Object>, essays: Array<Object>}} The parsed data object.
+         */
+        function parseTestBank(input) {
+            const lines = input.split('\n');
+            const data = {
+                multipleChoice: [],
+                essays: []
+            };
+
+            let currentSection = null;
+            let currentQuestion = null;
+            let essayQuestionNumber = 0;
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+
+                // Detect sections
+                if (trimmedLine.includes('Multiple Choice Questions') || trimmedLine.includes('## Multiple Choice Questions')) {
+                    currentSection = 'mc';
+                    continue;
+                } else if (trimmedLine.includes('Essay Questions') || trimmedLine.includes('## Essay Questions')) {
+                    // Push the last MC question before switching sections
+                    if (currentQuestion) {
+                        data.multipleChoice.push(currentQuestion);
+                        currentQuestion = null;
+                    }
+                    currentSection = 'essay';
+                    essayQuestionNumber = 0; // Reset question number for essay section
+                    continue;
+                } else if (trimmedLine.includes('Answer Key') || trimmedLine.includes('SOLUTIONS')) {
+                    break; // Stop parsing at answer key
+                }
+
+                if (currentSection === 'mc') {
+                    // Check for a new multiple choice question
+                    const mcMatch = trimmedLine.match(/^(\d+)\.\s*(.+?)\s*\*\*\[Answer:\s*([A-E])\]\*\*/);
+                    if (mcMatch) {
+                        // If a previous question exists, push it to the array
+                        if (currentQuestion) {
+                            data.multipleChoice.push(currentQuestion);
+                        }
+                        // Start a new question object
+                        currentQuestion = {
+                            number: parseInt(mcMatch[1]),
+                            text: mcMatch[2],
+                            answer: mcMatch[3],
+                            options: []
+                        };
+                    } else if (currentQuestion && trimmedLine.match(/^\s*[a-e]\)/)) {
+                        // Parse options for the current question
+                        const optionMatch = trimmedLine.match(/^\s*([a-e])\)\s*(.+)/);
+                        if (optionMatch) {
+                            currentQuestion.options.push({
+                                letter: optionMatch[1].toUpperCase(),
+                                text: optionMatch[2]
+                            });
+                        }
+                    }
+                } else if (currentSection === 'essay') {
+                    // Check for a new essay question
+                    const essayMatch = trimmedLine.match(/^(\d+)\.\s*(.+)/);
+                    if (essayMatch) {
+                        essayQuestionNumber++;
+                        data.essays.push({
+                            number: essayQuestionNumber,
+                            text: essayMatch[2]
+                        });
+                    }
+                }
+            }
+
+            // The fix: Add the last multiple choice question if the loop finishes
+            // before a new question is detected.
+            if (currentQuestion && currentSection === 'mc') {
+                data.multipleChoice.push(currentQuestion);
+            }
+
+            return data;
+        }
+
+        /**
+         * Generates the QTI XML string.
+         * @param {Object} data - The parsed test bank data.
+         * @param {string} title - The chapter title.
+         * @param {string} author - The author's name.
+         * @returns {string} The generated QTI XML.
+         */
+        function generateQTIXML(data, title, author) {
+            const chapterIdentifier = title.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<questestinterop xmlns="http://www.imsglobal.org/xsd/ims_qtiasiv1p2" 
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+                 xsi:schemaLocation="http://www.imsglobal.org/xsd/ims_qtiasiv1p2 http://www.imsglobal.org/xsd/ims_qtiasiv1p2p1.xsd">
+  
+  <assessment ident="${chapterIdentifier}" title="${escapeXML(title)}">
+    <qtimetadata>
+      <qtimetadatafield>
+        <fieldlabel>cc_maxattempts</fieldlabel>
+        <fieldentry>1</fieldentry>
+      </qtimetadatafield>
+      <qtimetadatafield>
+        <fieldlabel>author</fieldlabel>
+        <fieldentry>${escapeXML(author)}</fieldentry>
+      </qtimetadatafield>
+    </qtimetadata>
+    
+    <section ident="root_section">
+`;
+
+            // Generate Multiple Choice Questions
+            data.multipleChoice.forEach(question => {
+                xml += generateMCQuestionXML(question, chapterIdentifier);
+            });
+
+            // Generate Essay Questions
+            data.essays.forEach(question => {
+                xml += generateEssayQuestionXML(question, chapterIdentifier);
+            });
+
+            xml += `
+    </section>
+  </assessment>
+</questestinterop>`;
+
+            return xml;
+        }
+
+        /**
+         * Generates the XML for a single multiple choice question.
+         * @param {Object} question - The question data.
+         * @param {string} chapterIdentifier - The unique chapter identifier.
+         * @returns {string} The XML for the question.
+         */
+        function generateMCQuestionXML(question, chapterIdentifier) {
+            const questionId = `mc_${chapterIdentifier}_q${question.number}`;
+            
+            let xml = `
+      <item ident="${questionId}" title="MC Question ${question.number}">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>multiple_choice_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>1</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        
+        <presentation>
+          <material>
+            <mattext texttype="text/html"><![CDATA[<div><p>${escapeXML(question.text)}</p></div>]]></mattext>
+          </material>
+          
+          <response_lid ident="response1" rcardinality="Single">
+            <render_choice>`;
+
+            // Generate options
+            question.options.forEach(option => {
+                xml += `
+              <response_label ident="${questionId}_${option.letter}">
+                <material>
+                  <mattext texttype="text/html"><![CDATA[${escapeXML(option.text)}]]></mattext>
+                </material>
+              </response_label>`;
+            });
+
+            xml += `
+            </render_choice>
+          </response_lid>
+        </presentation>
+        
+        <resprocessing>
+          <outcomes>
+            <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/>
+          </outcomes>
+          <respcondition continue="No">
+            <conditionvar>
+              <varequal respident="response1">${questionId}_${question.answer}</varequal>
+            </conditionvar>
+            <setvar action="Set" varname="SCORE">100</setvar>
+          </respcondition>
+        </resprocessing>
+      </item>`;
+
+            return xml;
+        }
+
+        /**
+         * Generates the XML for a single essay question.
+         * @param {Object} question - The question data.
+         * @param {string} chapterIdentifier - The unique chapter identifier.
+         * @returns {string} The XML for the question.
+         */
+        function generateEssayQuestionXML(question, chapterIdentifier) {
+            const questionId = `essay_${chapterIdentifier}_q${question.number}`;
+            
+            return `
+      <item ident="${questionId}" title="Essay Question ${question.number}">
+        <itemmetadata>
+          <qtimetadata>
+            <qtimetadatafield>
+              <fieldlabel>question_type</fieldlabel>
+              <fieldentry>essay_question</fieldentry>
+            </qtimetadatafield>
+            <qtimetadatafield>
+              <fieldlabel>points_possible</fieldlabel>
+              <fieldentry>10</fieldentry>
+            </qtimetadatafield>
+          </qtimetadata>
+        </itemmetadata>
+        
+        <presentation>
+          <material>
+            <mattext texttype="text/html"><![CDATA[<div><p>${escapeXML(question.text)}</p></div>]]></mattext>
+          </material>
+          
+          <response_str ident="response1" rcardinality="Single">
+            <render_fib>
+              <response_label ident="answer" rshuffle="No"/>
+            </render_fib>
+          </response_str>
+        </presentation>
+        
+        <resprocessing>
+          <outcomes>
+            <decvar maxvalue="100" minvalue="0" varname="SCORE" vartype="Decimal"/>
+          </outcomes>
+        </resprocessing>
+      </item>`;
+        }
+
+        /**
+         * Generates the IMS manifest XML file.
+         * @param {Object} data - The parsed test bank data.
+         * @param {string} title - The chapter title.
+         * @param {string} author - The author's name.
+         * @returns {string} The generated manifest XML.
+         */
+        function generateManifestXML(data, title, author) {
+            const chapterIdentifier = title.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const filename = `${chapterIdentifier}.xml`;
+            
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="${chapterIdentifier}_manifest" version="1.1" 
+          xmlns="http://www.imsglobal.org/xsd/imscp_v1p1" 
+          xmlns:imsmd="http://www.imsglobal.org/xsd/imsmd_v1p2" 
+          xmlns:imsqti="http://www.imsglobal.org/xsd/imsqti_v2p1"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 
+                             http://www.imsglobal.org/xsd/imscp_v1p1.xsd">
+
+  <metadata>
+    <schema>IMS Content</schema>
+    <schemaversion>1.1.2</schemaversion>
+    <imsmd:lom>
+      <imsmd:general>
+        <imsmd:identifier>${chapterIdentifier}</imsmd:identifier>
+        <imsmd:title>
+          <imsmd:langstring xml:lang="en">${escapeXML(title)}</imsmd:langstring>
+        </imsmd:title>
+        <imsmd:description>
+          <imsmd:langstring xml:lang="en">Test bank containing ${data.multipleChoice.length} multiple choice and ${data.essays.length} essay questions from ${escapeXML(title)} by ${escapeXML(author)}.</imsmd:langstring>
+        </imsmd:description>
+        <imsmd:language>en</imsmd:language>
+      </imsmd:general>
+      <imsmd:lifeCycle>
+        <imsmd:version>
+          <imsmd:langstring xml:lang="en">1.0</imsmd:langstring>
+        </imsmd:version>
+        <imsmd:status>
+          <imsmd:source>LOMv1.0</imsmd:source>
+          <imsmd:value>final</imsmd:value>
+        </imsmd:status>
+        <imsmd:contribute>
+          <imsmd:role>
+            <imsmd:source>LOMv1.0</imsmd:source>
+            <imsmd:value>author</imsmd:value>
+          </imsmd:role>
+          <imsmd:entity>${escapeXML(author)}</imsmd:entity>
+          <imsmd:date>
+            <imsmd:datetime>${new Date().toISOString().split('T')[0]}</imsmd:datetime>
+          </imsmd:date>
+        </imsmd:contribute>
+      </imsmd:lifeCycle>
+      <imsmd:technical>
+        <imsmd:format>text/xml</imsmd:format>
+      </imsmd:technical>
+      <imsmd:educational>
+        <imsmd:interactivitytype>
+          <imsmd:source>LOMv1.0</imsmd:source>
+          <imsmd:value>mixed</imsmd:value>
+        </imsmd:interactivitytype>
+        <imsmd:learningresourcetype>
+          <imsmd:source>LOMv1.0</imsmd:source>
+          <imsmd:value>assessment</imsmd:value>
+        </imsmd:learningresourcetype>
+        <imsmd:context>
+          <imsmd:source>LOMv1.0</imsmd:source>
+          <imsmd:value>higher education</imsmd:value>
+        </imsmd:context>
+      </imsmd:educational>
+    </imsmd:lom>
+  </metadata>
+
+  <organizations default="${chapterIdentifier}_organization">
+    <organization identifier="${chapterIdentifier}_organization" structure="hierarchical">
+      <title>${escapeXML(title)}</title>
+      <item identifier="${chapterIdentifier}_test" identifierref="${chapterIdentifier}_assessment">
+        <title>${escapeXML(title)} Assessment</title>
+      </item>
+    </organization>
+  </organizations>
+
+  <resources>
+    <resource identifier="${chapterIdentifier}_assessment" type="imsqti_assessment_xmlv1p2" href="${filename}">
+      <file href="${filename}"/>
+    </resource>
+  </resources>
+
+</manifest>`;
+        }
+
+        /**
+         * A helper function to escape special characters for XML.
+         * @param {string} text - The text to escape.
+         * @returns {string} The escaped text.
+         */
+        function escapeXML(text) {
+            if (typeof text !== 'string') return '';
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        /**
+         * Displays the generated XML and stats in the UI.
+         */
+        function displayResults() {
+            document.getElementById('qtiOutput').value = generatedData.qti;
+            document.getElementById('manifestOutput').value = generatedData.manifest;
+            
+            // Display stats
+            const statsHTML = `
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-indigo-600 mb-1">${generatedData.stats.multipleChoice}</div>
+                    <div class="text-gray-600">Multiple Choice Questions</div>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-indigo-600 mb-1">${generatedData.stats.essays}</div>
+                    <div class="text-gray-600">Essay Questions</div>
+                </div>
+                <div class="bg-gray-100 p-6 rounded-xl text-center">
+                    <div class="text-3xl font-bold text-indigo-600 mb-1">${generatedData.stats.totalQuestions}</div>
+                    <div class="text-gray-600">Total Questions</div>
+                </div>
+            `;
+            document.getElementById('statsContainer').innerHTML = statsHTML;
+            
+            // Display summary
+            const summaryHTML = `
+                <div class="bg-green-100 border border-green-200 text-green-700 rounded-lg p-6">
+                    <h3 class="font-bold text-xl mb-2">✅ Generation Complete!</h3>
+                    <p class="mb-4">Your QTI files have been successfully generated and are ready for download.</p>
+                    <p class="font-bold mb-1">Statistics:</p>
+                    <ul class="list-disc list-inside mb-4">
+                        <li>${generatedData.stats.multipleChoice} Multiple Choice Questions (1 point each)</li>
+                        <li>${generatedData.stats.essays} Essay Questions (10 points each)</li>
+                        <li>Total possible points: ${generatedData.stats.multipleChoice + (generatedData.stats.essays * 10)}</li>
+                    </ul>
+                    <p class="font-bold mb-1">Next Steps:</p>
+                    <ol class="list-decimal list-inside">
+                        <li>Download both files using the buttons above</li>
+                        <li>Create a ZIP package containing both files</li>
+                        <li>Import the ZIP file into your Learning Management System (LMS) as a Common Cartridge or QTI package</li>
+                    </ol>
+                </div>
+            `;
+            document.getElementById('summaryContent').innerHTML = summaryHTML;
+            
+            document.getElementById('outputSection').classList.remove('hidden');
+        }
+
+        /**
+         * Switches between the different output tabs.
+         * @param {string} tabName - The name of the tab to switch to ('qti', 'manifest', 'summary').
+         */
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // Deactivate all tab buttons and their associated colors
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'border-indigo-500');
+                btn.classList.add('border-transparent');
+            });
+            
+            // Show selected tab content and activate the button
+            const selectedTab = document.getElementById(tabName + '-tab');
+            const selectedButton = document.querySelector(`.tab-button[onclick*="'${tabName}'"]`);
+            
+            selectedTab.classList.remove('hidden');
+            selectedButton.classList.add('active', 'border-indigo-500');
+            selectedButton.classList.remove('border-transparent');
+        }
+
+        /**
+         * Downloads the generated QTI or manifest file.
+         * @param {string} type - 'qti' or 'manifest'.
+         */
+        function downloadFile(type) {
+            const chapterTitle = document.getElementById('chapterTitle').value.trim();
+            const filename = chapterTitle.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            
+            let content, mimeType, fileExtension;
+            
+            if (type === 'qti') {
+                content = generatedData.qti;
+                mimeType = 'application/xml';
+                fileExtension = '.xml';
+            } else if (type === 'manifest') {
+                content = generatedData.manifest;
+                mimeType = 'application/xml';
+                fileExtension = '_manifest.xml';
+            }
+            
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename + fileExtension;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showAlert(`${type.toUpperCase()} file downloaded successfully!`, 'success');
+        }
+
+        /**
+         * Copies content from a textarea to the clipboard.
+         * @param {string} elementId - The ID of the textarea to copy from.
+         */
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            showAlert('Content copied to clipboard!', 'success');
+        }
+
+        /**
+         * Displays a temporary alert message.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of alert ('success' or 'error').
+         */
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertClass = type === 'success' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200';
+            
+            const alertHTML = `
+                <div class="alert px-4 py-3 rounded-lg border-2 ${alertClass} transition-opacity duration-300">
+                    ${message}
+                </div>
+            `;
+            
+            alertContainer.innerHTML = alertHTML;
+            
+            setTimeout(() => {
+                alertContainer.innerHTML = '';
+            }, 3000);
+        }
+
+        /**
+         * Updates the progress bar.
+         * @param {number} percentage - The percentage to fill the bar.
+         */
+        function updateProgress(percentage) {
+            document.getElementById('progressBar').style.width = percentage + '%';
+        }
+    </script>
+</body>
+</html>
