@@ -1,21 +1,19 @@
 name: Generate Sitemap
 on:
   push:
-    branches: [ main ] # Change to master if your repo uses it
+    branches: [ main ] # Change to master if your repository uses it
 
 jobs:
   sitemap:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true' # Suppresses the Node 20 warning
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4.1.7 # Explicitly pinning a late v4 point release resolves the core tag check
 
     - name: Generate Sitemap
       uses: cicirello/generate-sitemap@v1
       with:
-        base-url-path: "https://gustafsone.github.io"
+        base-url-path: "https://gustafsone.github.io/My-Scripts"
 
     - name: Commit and Push Sitemap
       run: |
