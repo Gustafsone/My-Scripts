@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4.1.7 # Explicitly pinning a late v4 point release resolves the core tag check
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # Pinning exact SHA silences the version tag warning
 
     - name: Generate Sitemap
       uses: cicirello/generate-sitemap@v1
       with:
-        base-url-path: "https://gustafsone.github.io/My-Scripts"
+        base-url-path: "https://gustafson.github.io/My-Scripts" # Replace with your actual username and repo
 
     - name: Commit and Push Sitemap
       run: |
