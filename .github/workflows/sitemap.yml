@@ -1,7 +1,7 @@
 name: Generate Sitemap
 on:
   push:
-    branches: [ main ] # Change to master if needed
+    branches: [ main ] # Change to master if your repo uses it
 
 jobs:
   sitemap:
@@ -11,9 +11,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Generate Sitemap
-      uses: guimauvedigital/generate-sitemap@v1
+      uses: cicirello/generate-sitemap@v1
       with:
-        base_url: "https://gustafsone.github.io"
+        base-url-path: "https://gustafsone.github.io"
 
     - name: Commit and Push Sitemap
       run: |
