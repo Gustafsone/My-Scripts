@@ -1,19 +1,22 @@
 name: Generate Sitemap
 on:
   push:
-    branches: [ main ] # Change to master if your repository uses it
+    branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   sitemap:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4.2.0 # Native Node 24 support eliminates the warning entirely
+      uses: actions/checkout@v4.2.0
 
     - name: Generate Sitemap
       uses: cicirello/generate-sitemap@v1
       with:
-        base-url-path: "https://gustafsone.github.io/My-Scripts" # Make sure this matches your real URL
+        base-url-path: "https://gustafsone.github.io/My-Scripts"
 
     - name: Commit and Push Sitemap
       run: |
