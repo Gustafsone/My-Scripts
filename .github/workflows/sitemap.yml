@@ -8,12 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # Pinning exact SHA silences the version tag warning
+      uses: actions/checkout@v4.2.0 # Native Node 24 support eliminates the warning entirely
 
     - name: Generate Sitemap
       uses: cicirello/generate-sitemap@v1
       with:
-        base-url-path: "https://gustafson.github.io/My-Scripts" # Replace with your actual username and repo
+        base-url-path: "https://gustafsone.github.io/My-Scripts" # Make sure this matches your real URL
 
     - name: Commit and Push Sitemap
       run: |
